@@ -12,7 +12,7 @@ import TablePedido from '../pages/TablePedido';
 import DomicilioForm from '../pages/DomicilioForm';
 import OrderForm from '../pages/OrderForm';
 import PedidoForm from '../pages/PedidoForm'
-import DetallePedidoPagado from '../pages/DetallePedidoPagado';
+import DetallePedidoPagado from '../pages/DetallePedidoDespachado';
 
 
 

@@ -3,6 +3,8 @@ import axios from "axios";
 import { DataGrid } from '@mui/x-data-grid';
 import { Typography, Button, Stack, Box, Modal, List, ListItem, ListItemText, Checkbox } from '@mui/material';
 import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
+import { useNavigate } from "react-router-dom";
 
 // Definir las columnas del DataGrid
 const columns = [
@@ -41,7 +43,9 @@ const modalStyle = {
     p: 4,
 };
 
-const DetallePedidoPagado = () => {
+const MySwal = withReactContent(Swal);
+
+const DetallePedidoDespachado = () => {
     const [isAnyRowSelected, setIsAnyRowSelected] = useState(false);
     const [selectedRowsData, setSelectedRowsData] = useState([]);
     const [selectedPedido, setSelectedPedido] = useState([]);
@@ -54,10 +58,28 @@ const DetallePedidoPagado = () => {
     const [errorProductos, setErrorProductos] = useState(null);
     const [open, setOpen] = useState(false);
 
-    const handleOpen = () => setOpen(true);
+    const handleOpen = () => {
+        setOpen(true);
+        localStorage.setItem('checkedProductos',JSON.stringify([]))
+        setCheckedProductos([])
+    }
+
+    const navigate = useNavigate();
+
+    const screenClean=()=>{
+        navigate("/pagados")
+        MySwal.fire({
+            title: "El pedido se ha pagado:",
+            text: "Gracias por su compra!",
+            icon: "burguer"
+        });
+    }
+
     const handleClose = () => {
         setOpen(false);
         setCheckedProductos([]);
+        console.log('cleaning checked')
+        console.log(checkedProductos)
         localStorage.removeItem('selectedProductos');
     };
 
@@ -75,12 +97,16 @@ const DetallePedidoPagado = () => {
     }, [selectedRowsData]);
 
     useEffect(() => {
+        console.log(checkedProductos);
+    }, [checkedProductos]);
+
+    useEffect(() => {
         const fetchPedidos = async () => {
             try {
                 const response = await axios.get("http://localhost:8085/api/v1/pedidos");
-                const filteredDespachados = response.data.filter(pedido => pedido.estado === "DESPACHADO");
-                setPedidos(filteredDespachados);
-                //setPedidos(response.data);
+                const filteredPedidos = response.data.filter(pedido => pedido.estado === "DESPACHADO");
+                setPedidos(filteredPedidos);
+                
                 setLoadingPedidos(false);
             } catch (error) {
                 setErrorPedidos(error);
@@ -132,7 +158,14 @@ const DetallePedidoPagado = () => {
     const handleDespachar = async () => {
         if (selectedRowsData.length > 0) {
             const productos = await fetchProductos(selectedRowsData[0].id);
+            console.log('fetching products')
+            console.log(productos)
             setSelectedPedido(productos);
+            console.log('handling despachar')
+            console.log(checkedProductos)
+            setCheckedProductos(null)
+            setCheckedProductos([])
+            console.log(checkedProductos)
             handleOpen();
         }
     };
@@ -140,14 +173,22 @@ const DetallePedidoPagado = () => {
     const handleToggle = (producto) => () => {
         const currentIndex = checkedProductos.indexOf(producto);
         const newChecked = [...checkedProductos];
+        
 
         if (currentIndex === -1) {
+            console.log('is empty and pushing')
+            console.log(newChecked)
             newChecked.push(producto);
+            console.log(newChecked)
         } else {
+            console.log('using splice')
+            console.log(newChecked)
             newChecked.splice(currentIndex, 1);
+            console.log(newChecked)
         }
 
         setCheckedProductos(newChecked);
+        localStorage.setItem('checkedProductos', JSON.stringify(newChecked))
         localStorage.setItem('selectedProductos', JSON.stringify(newChecked));
     };
 
@@ -168,13 +209,13 @@ const DetallePedidoPagado = () => {
             // Actualizar la disponibilidad de la mesa a true
             const updatedMesa = {
                 ...pedidoData.id_mesa,
-                disponibilidad: true,
+                disponibilidad: false,
             };
             await axios.put(`http://localhost:8085/api/v1/mesas`, updatedMesa);
 
             console.log("Productos despachados:", checkedProductos);
             handleClose();
-
+            screenClean();
 
         } catch (error) {
             console.error("Error despachando productos:", error);
@@ -233,6 +274,7 @@ const DetallePedidoPagado = () => {
                             <ListItem key={index} button onClick={handleToggle(producto)}>
                                 <Checkbox
                                     edge="start"
+                                    
                                     checked={checkedProductos.indexOf(producto) !== -1}
                                     tabIndex={-1}
                                     disableRipple
@@ -258,4 +300,4 @@ const DetallePedidoPagado = () => {
     );
 };
 
-export default DetallePedidoPagado;
+export default DetallePedidoDespachado;
